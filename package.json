@@ -2,8 +2,10 @@
   "name": "team-task-manager",
   "version": "1.0.0",
   "scripts": {
-    "build": "npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend && npx --prefix backend prisma generate",
-    "start": "node backend/server.js"
+    "start": "node backend/server.js",
+    "dev:backend": "cd backend && nodemon server.js",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend && cd backend && npx prisma generate"
   },
   "engines": {
     "node": ">=18.0.0"

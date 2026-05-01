@@ -1,20 +1,20 @@
 # Team Task Manager
 
-A full-stack team collaboration app with role-based access control (Admin/Member), project management, task tracking, and a real-time dashboard.
+A full-stack team collaboration platform with role-based access control (Admin/Member), project management, task tracking, and a real-time dashboard.
 
-## Live Demo
-> Deployed on Railway — see submission URL
+**Live Demo:** [Deployed on Vercel](#)
 
 ---
 
 ## Features
 
-- **Authentication** — Signup & Login with JWT tokens
-- **Role-Based Access** — Admin can manage all projects & tasks; Members have scoped access
-- **Project Management** — Create projects, invite team members
-- **Task Tracking** — Create tasks, assign to members, set due dates, update status (TODO → IN_PROGRESS → REVIEW → DONE)
-- **Dashboard** — Overview of tasks by status, overdue tasks, and team workload
-- **REST API** — Clean, validated JSON API
+- **Authentication** — Signup & Login with JWT tokens (24h expiry)
+- **Role-Based Access** — Admin manages all projects & tasks; Members have scoped access
+- **Project Management** — Create projects, add/remove team members
+- **Task Tracking** — Create tasks, assign to members, set due dates, update status
+- **Task Statuses** — `TODO` → `IN_PROGRESS` → `REVIEW` → `DONE`
+- **Dashboard** — Live stats: tasks by status, overdue count, team workload
+- **REST API** — Clean, validated JSON API with JWT middleware
 
 ---
 
@@ -22,11 +22,41 @@ A full-stack team collaboration app with role-based access control (Admin/Member
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 19, React Router, Vite |
+| Frontend | React 19, React Router v7, Vite 8 |
 | Backend | Node.js, Express 5 |
-| Database | PostgreSQL (via Prisma ORM) |
+| Database | PostgreSQL via Prisma ORM |
 | Auth | JWT + bcrypt |
-| Deployment | Railway |
+| Hosting | Vercel (frontend + serverless API) |
+| DB Host | Neon (free PostgreSQL) |
+
+---
+
+## Project Structure
+
+```
+team-task-manager/
+├── api/
+│   └── index.js          # Vercel serverless function entry
+├── backend/
+│   ├── app.js            # Express app (exported)
+│   ├── server.js         # Local dev server
+│   ├── middleware/
+│   │   └── auth.js       # JWT authentication middleware
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── projects.js
+│   │   ├── tasks.js
+│   │   └── dashboard.js
+│   └── prisma/
+│       └── schema.prisma
+├── frontend/
+│   └── src/
+│       ├── pages/        # Dashboard, Login, ProjectList, ProjectDetails
+│       ├── components/   # Layout
+│       └── api.js        # Fetch wrapper with JWT
+├── vercel.json           # Vercel deployment config
+└── README.md
+```
 
 ---
 
@@ -34,87 +64,97 @@ A full-stack team collaboration app with role-based access control (Admin/Member
 
 ### Prerequisites
 - Node.js 18+
-- PostgreSQL running locally (or use SQLite by switching schema)
+- PostgreSQL (or use [Neon](https://neon.tech) free tier)
 
-### 1. Clone the repo
+### 1. Clone
 ```bash
-git clone <repo-url>
+git clone https://github.com/chennayaswanth/team-task-manager
 cd team-task-manager
 ```
 
-### 2. Set up backend
+### 2. Backend setup
 ```bash
 cd backend
-cp .env.example .env   # fill in DATABASE_URL and JWT_SECRET
+cp .env.example .env       # Add your DATABASE_URL and JWT_SECRET
 npm install
 npx prisma migrate dev
-node server.js
+node server.js             # Runs on http://localhost:5000
 ```
 
-### 3. Set up frontend (separate terminal)
+### 3. Frontend setup (new terminal)
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev                # Runs on http://localhost:5173
 ```
-
-Frontend runs on `http://localhost:5173`, backend on `http://localhost:5000`.
+> The Vite dev server proxies `/api` calls to `http://localhost:5000`
 
 ---
 
 ## Environment Variables
 
 ### Backend (`backend/.env`)
-```
-DATABASE_URL=postgresql://user:password@localhost:5432/taskmanager
+```env
+DATABASE_URL=postgresql://user:password@host:5432/dbname?sslmode=require
 JWT_SECRET=your_strong_secret_here
 PORT=5000
 ```
 
 ---
 
-## API Endpoints
+## API Reference
 
 ### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register a new user |
-| POST | `/api/auth/login` | Login and receive JWT |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/register` | ❌ | Register (role: ADMIN or MEMBER) |
+| POST | `/api/auth/login` | ❌ | Login, returns JWT token |
 
 ### Projects
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/projects` | List user's projects |
-| POST | `/api/projects` | Create a project (Admin) |
-| GET | `/api/projects/:id` | Get project details |
-| DELETE | `/api/projects/:id` | Delete project (Admin) |
-| POST | `/api/projects/:id/members` | Add member to project |
-| DELETE | `/api/projects/:id/members/:userId` | Remove member |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/projects` | ✅ | List projects (filtered by role) |
+| POST | `/api/projects` | Admin | Create project |
+| GET | `/api/projects/:id` | ✅ | Project details + tasks + members |
+| POST | `/api/projects/:id/members` | Admin | Add members |
+| DELETE | `/api/projects/:id/members/:userId` | Admin | Remove member |
 
 ### Tasks
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/tasks?projectId=` | List tasks for a project |
-| POST | `/api/tasks` | Create a task |
-| PATCH | `/api/tasks/:id` | Update task (status, assignee, etc.) |
-| DELETE | `/api/tasks/:id` | Delete task (Admin/Creator) |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/tasks` | ✅ | Create task |
+| PUT | `/api/tasks/:id` | ✅ | Update task (status, assignee, etc.) |
+| DELETE | `/api/tasks/:id` | ✅ | Delete task (Admin or Creator) |
+| GET | `/api/tasks/my-tasks` | ✅ | Get my assigned tasks |
 
 ### Dashboard
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/dashboard` | Get summary stats |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/dashboard` | ✅ | Summary stats (status counts, overdue) |
 
 ---
 
-## Railway Deployment
+## Deploying to Vercel + Neon
 
-1. Push this repo to GitHub
-2. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub
-3. Add a **PostgreSQL** service in Railway
-4. Set environment variables in Railway dashboard:
-   - `DATABASE_URL` → (auto-filled by Railway Postgres plugin)
-   - `JWT_SECRET` → your secret
-5. Railway auto-runs `npm run build` then starts with `npm start`
+### 1. Create a Neon database
+1. Go to [neon.tech](https://neon.tech) → sign up free
+2. Create a new project → copy the **connection string**
+3. It looks like: `postgresql://user:password@ep-xxx.neon.tech/neondb?sslmode=require`
+
+### 2. Deploy to Vercel
+1. Go to [vercel.com](https://vercel.com) → **New Project**
+2. Import `chennayaswanth/team-task-manager` from GitHub
+3. **Root Directory** → leave as `/` (root)
+4. Under **Environment Variables**, add:
+   - `DATABASE_URL` → your Neon connection string
+   - `JWT_SECRET` → any strong random string
+5. Click **Deploy**
+
+Vercel auto-runs the build command from `vercel.json`:
+- Builds the React frontend
+- Generates Prisma client
+- Runs database migrations
+- Starts the serverless API
 
 ---
 
