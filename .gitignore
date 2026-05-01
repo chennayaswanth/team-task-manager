@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build output
+frontend/dist/
+
+# Environment
+.env
+backend/.env
+frontend/.env
+frontend/.env.local
+
+# Database (SQLite local dev only)
+backend/dev.db
+backend/*.db
+backend/prisma/dev.db
+
+# Prisma generated client
+backend/node_modules/.prisma/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
